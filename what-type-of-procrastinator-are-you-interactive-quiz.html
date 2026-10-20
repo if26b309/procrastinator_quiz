@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>What Type of Procrastinator Are You?</title>
+<style>
+  :root { font-family: Arial, Helvetica, sans-serif; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #f4f5fb; color: #1e2233; }
+  main { max-width: 560px; margin: 0 auto; padding: 24px 16px 48px; }
+  .card { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 2px 12px rgba(30,34,51,.08); margin-top: 16px; }
+  h1 { font-size: 1.4rem; margin: 8px 0 4px; }
+  .sub { color: #6b7186; font-size: .9rem; margin: 0 0 8px; }
+  .qnum { font-size: .75rem; font-weight: 700; letter-spacing: .08em; color: #7c6cf0; text-transform: uppercase; }
+  .question { font-size: 1.05rem; font-weight: 600; margin: 6px 0 14px; line-height: 1.4; }
+  .opt { display: block; width: 100%; text-align: left; background: #f7f7fd; border: 2px solid #e6e6f4; border-radius: 12px;
+         padding: 12px 14px; margin: 8px 0; font-size: .95rem; cursor: pointer; line-height: 1.4; color: #1e2233; }
+  .opt:hover { border-color: #b9b3f2; }
+  .opt.sel { border-color: #7c6cf0; background: #eeebff; font-weight: 600; }
+  .badge { display: inline-block; font-weight: 800; font-size: .8rem; background: #eeebff; color: #5a48d6;
+           border-radius: 8px; padding: 2px 8px; margin-right: 6px; }
+  button.primary { width: 100%; background: #5a48d6; color: #fff; border: 0; border-radius: 12px; padding: 14px;
+                   font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 12px; }
+  button.primary:disabled { background: #c9c9dd; cursor: not-allowed; }
+  .bar { height: 10px; background: #e6e6f4; border-radius: 6px; overflow: hidden; margin: 6px 0 2px; }
+  .bar > div { height: 100%; background: #7c6cf0; border-radius: 6px; }
+  .result-emoji { font-size: 3rem; margin: 4px 0; }
+  .result-title { font-size: 1.3rem; font-weight: 800; margin: 2px 0; }
+  .muted { color: #6b7186; font-size: .85rem; }
+  .hidden { display: none; }
+  .prog { height: 6px; background: #e6e6f4; border-radius: 4px; margin-top: 14px; overflow: hidden; }
+  .prog > div { height: 100%; width: 0; background: #7c6cf0; transition: width .3s; }
+</style>
+</head>
+<body>
+<main>
+  <div class="card" id="intro">
+    <div class="qnum">Procrastination · Self-Assessment</div>
+    <h1>What Type of Procrastinator Are You?</h1>
+    <p class="sub">8 everyday situations. Pick the answer that feels most like YOU — not what's "right." Takes 3 minutes. Your answers stay on your device.</p>
+    <button class="primary" id="startBtn">Start the quiz →</button>
+  </div>
+
+  <div class="card hidden" id="quizCard">
+    <div class="qnum" id="qLabel"></div>
+    <p class="question" id="qText"></p>
+    <div id="opts"></div>
+    <button class="primary" id="nextBtn" disabled>Next</button>
+    <div class="prog"><div id="progBar"></div></div>
+  </div>
+
+  <div class="card hidden" id="resultCard"></div>
+
+  <p class="muted" style="margin-top:16px; text-align:center">
+    Based on the three causes of procrastination (Solomon &amp; Rothblum, 1984 — PASS) plus the prioritization distinction.<br>
+    For educational purposes only — a didactic simplification, not a psychological test.
+  </p>
+</main>
+
+<script>
+const QUESTIONS = [
+  { text: "You've been given a boring-but-important report. What's most likely?",
+    opts: ["I push it aside because it simply doesn't interest me — I do more fun things first",
+           "I want it to be perfect, so I wait until I \"have enough time to do it justice\"",
+           "I open the file, stare at page 1, close it again — I don't even know where to start",
+           "It's honestly not that urgent — other things genuinely matter more right now"] },
+  { text: "It's Sunday evening. The assignment due Tuesday isn't started. You think:",
+    opts: ["\"It's so tedious — I'll do it when I feel like it\"",
+           "\"If I start now and it turns out bad, everyone will see I'm not capable\"",
+           "\"I'd start, but how do I even begin? Maybe I should re-read the assignment first… again\"",
+           "\"Tuesday? There are more important things on my list first\""] },
+  { text: "Your inner voice when you avoid a task sounds like…",
+    opts: ["\"This is pointless / boring / not my thing\"",
+           "\"What if I fail? What if it's not good enough?\"",
+           "\"It's just… so big. Where would I even start?\"",
+           "\"Relax — it's really not that important\""] },
+  { text: "A task you dread has a deadline in 3 days. You…",
+    opts: ["Do the tasks you enjoy first and \"save\" the dreadful one for later",
+           "Research how to do it perfectly, prepare extensively — but don't actually produce anything",
+           "Make coffee, tidy your desk, organize files — everything except the first actual step",
+           "Realistically decide it can wait until next week without consequences"] },
+  { text: "Which excuse do you use most often (out loud or to yourself)?",
+    opts: ["\"I'm just not interested in this\"",
+           "\"I want to do it properly, not half-heartedly\"",
+           "\"I first need to figure out how to approach it\"",
+           "\"Something more urgent came up\""] },
+  { text: "After postponing for weeks, the deadline hits. You feel:",
+    opts: ["Mild annoyance — the task itself was the problem",
+           "Panic and shame — now everyone will see my \"bad\" work",
+           "Confusion — you finally start and realize you never needed that long runway",
+           "Fine — it truly wasn't a priority, and that was the right call"] },
+  { text: "Which trick would help you most?",
+    opts: ["Making the task more fun: gamify it, do it with friends, reward yourself",
+           "Setting \"good enough\" standards: an 80% draft today beats a 100% dream never",
+           "The 5-minute rule: just open it and write ONE sentence — anywhere",
+           "A priority matrix: decide honestly what belongs on the list at all"] },
+  { text: "Be honest: what stopped you the LAST time you procrastinated?",
+    opts: ["The task clashed with what I actually wanted to do",
+           "The fear of doing it badly",
+           "Not knowing where or how to begin",
+           "It genuinely wasn't important or urgent at that moment"] }
+];
+
+const TYPES = {
+  a: { emoji: "🦥", name: "The Avoider", cause: "Preferences / task aversiveness",
+       desc: "You postpone what bores you. The task clashes with what you actually want to do — so it keeps sliding to the bottom of the list.",
+       fix: "Make it more attractive: gamify it, pair up with someone, reward yourself, or connect it to a goal you genuinely care about." },
+  b: { emoji: "🛡️", name: "The Perfectionist", cause: "Fear of failure",
+       desc: "You postpone to protect your self-esteem: \"If I never really try, the failure doesn't count.\" The cruel irony: starting earlier — not later — is what dissolves the fear.",
+       fix: "Lower the bar for STARTING. Drafts are allowed to be bad. An 80% draft today beats a 100% dream never." },
+  c: { emoji: "🚧", name: "The Starter-Blocker", cause: "Start problems",
+       desc: "The wall isn't the task — it's the first step. Once you're actually in, momentum usually takes over.",
+       fix: "The 5-minute rule: start anywhere, badly, on purpose. Open the file. Write ONE sentence. That's the whole assignment." },
+  d: { emoji: "📋", name: "The Prioritizer", cause: "Not actually procrastination!",
+       desc: "You postpone things that are genuinely unimportant or non-urgent. That's prioritization — a skill, not a problem.",
+       fix: "None needed — but check honestly: is it really unimportant, or is \"D\" your disguise for A, B or C?" }
+};
+
+const LETTERS = ["a","b","c","d"];
+let scores = { a:0, b:0, c:0, d:0 };
+let current = 0, chosen = null;
+
+const $ = id => document.getElementById(id);
+
+function show(id) { $(id).classList.remove("hidden"); }
+function hide(id) { $(id).classList.add("hidden"); }
+
+function renderQuestion() {
+  const q = QUESTIONS[current];
+  $("qLabel").textContent = "Question " + (current + 1) + " of " + QUESTIONS.length;
+  $("qText").textContent = q.text;
+  const box = $("opts"); box.innerHTML = "";
+  chosen = null;
+  $("nextBtn").disabled = true;
+  $("nextBtn").textContent = current === QUESTIONS.length - 1 ? "See my result →" : "Next";
+  q.opts.forEach((opt, i) => {
+    const b = document.createElement("button");
+    b.className = "opt";
+    b.innerHTML = "<span class='badge'>" + LETTERS[i].toUpperCase() + "</span>" + opt;
+    b.onclick = () => {
+      box.querySelectorAll(".opt").forEach(o => o.classList.remove("sel"));
+      b.classList.add("sel");
+      chosen = LETTERS[i];
+      $("nextBtn").disabled = false;
+    };
+    box.appendChild(b);
+  });
+  $("progBar").style.width = (current / QUESTIONS.length * 100) + "%";
+}
+
+$("startBtn").onclick = () => { hide("intro"); show("quizCard"); renderQuestion(); };
+
+$("nextBtn").onclick = () => {
+  if (!chosen) return;
+  scores[chosen]++;
+  current++;
+  if (current < QUESTIONS.length) renderQuestion();
+  else showResult();
+};
+
+function showResult() {
+  $("progBar").style.width = "100%";
+  hide("quizCard");
+  const max = Math.max(scores.a, scores.b, scores.c, scores.d);
+  const primary = LETTERS.find(l => scores[l] === max);
+  const second = LETTERS.filter(l => l !== primary).sort((x,y) => scores[y]-scores[x])[0];
+  const t = TYPES[primary];
+  const rows = LETTERS.map(l => {
+    const pct = Math.round(scores[l] / QUESTIONS.length * 100);
+    const label = TYPES[l].name + " (" + l.toUpperCase() + ")";
+    return "<div><div style='display:flex;justify-content:space-between;font-size:.85rem;margin-top:8px'><span>" + label +
+           "</span><b>" + scores[l] + "</b></div><div class='bar'><div style='width:" + pct + "%'></div></div></div>";
+  }).join("");
+  const secondTxt = scores[second] > 0
+    ? "<p class='muted'>Your backup mode: <b>" + TYPES[second].name + "</b> (" + scores[second] + " points) — most of us are a mix.</p>"
+    : "";
+  $("resultCard").innerHTML =
+    "<div class='result-emoji'>" + t.emoji + "</div>" +
+    "<div class='result-title'>" + t.name + "</div>" +
+    "<p class='muted'>Main cause: " + t.cause + " · " + scores[primary] + " of " + QUESTIONS.length + " points</p>" +
+    "<p>" + t.desc + "</p>" +
+    "<p><b>💡 Your fix:</b> " + t.fix + "</p>" + secondTxt +
+    "<hr style='border:0;border-top:1px solid #e6e6f4;margin:16px 0'>" +
+    "<div class='qnum'>Your full profile</div>" + rows +
+    "<button class='primary' onclick='location.reload()' style='margin-top:20px'>Take it again</button>";
+  show("resultCard");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+</script>
+</body>
+</html>
